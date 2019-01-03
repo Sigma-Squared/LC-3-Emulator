@@ -1,15 +1,15 @@
+#include <fcntl.h>
+#include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
 #include <unistd.h>
-#include <fcntl.h>
 
+#include <sys/mman.h>
+#include <sys/termios.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <sys/termios.h>
-#include <sys/mman.h>
 
 #define REG_MASK 0b111
 
@@ -56,17 +56,17 @@ enum {
 };
 
 enum {
-    TRAP_GETC  = 0b100000,  /* get character from keyboard */
-    TRAP_OUT   = 0b100001,  /* output a character */
-    TRAP_PUTS  = 0b100010,  /* output a word string */
-    TRAP_IN    = 0b100011,  /* input a string */
-    TRAP_PUTSP = 0b100100,  /* output a byte string */
-    TRAP_HALT  = 0b100101   /* halt the program */
+    TRAP_GETC = 0b100000,  /* get character from keyboard */
+    TRAP_OUT = 0b100001,   /* output a character */
+    TRAP_PUTS = 0b100010,  /* output a word string */
+    TRAP_IN = 0b100011,    /* input a string */
+    TRAP_PUTSP = 0b100100, /* output a byte string */
+    TRAP_HALT = 0b100101   /* halt the program */
 };
 
 enum {
     MR_KBSR = 0xFE00, /* keyboard status */
-    MR_KBDR = 0xFE02 /* keyboard data */
+    MR_KBDR = 0xFE02  /* keyboard data */
 };
 
 uint16_t instr; /* current instruction */
@@ -100,7 +100,7 @@ void mem_write(uint16_t addr, uint16_t val) {
 }
 
 uint16_t sign_extend(uint16_t x, int bit_count) {
-    if ((x >> (bit_count-1)) & 1) {
+    if ((x >> (bit_count - 1)) & 1) {
         x |= (0xFFFF << bit_count);
     }
     return x;
@@ -130,8 +130,8 @@ void update_flags(uint16_t r) {
 }
 
 void add_and(int and) {
-    uint16_t dr = (instr>>9) & REG_MASK;
-    uint16_t sr1 = (instr>>6) & REG_MASK;
+    uint16_t dr = (instr >> 9) & REG_MASK;
+    uint16_t sr1 = (instr >> 6) & REG_MASK;
     uint16_t imm_flag = nthbit(5);
 
     uint16_t opr2;
@@ -152,7 +152,7 @@ void br() {
     uint16_t n = nthbit(11);
     uint16_t z = nthbit(10);
     uint16_t p = nthbit(9);
-    if ((n && reg[R_COND]==FL_NEG) || (z && reg[R_COND]==FL_ZRO) || (p && reg[R_COND]==FL_POS)) {
+    if ((n && reg[R_COND] == FL_NEG) || (z && reg[R_COND] == FL_ZRO) || (p && reg[R_COND] == FL_POS)) {
         reg[R_PC] += lastnbits(9);
     }
 }
@@ -163,7 +163,7 @@ void jmp_ret() {
 
 void jsr() {
     reg[R_R7] = reg[R_PC];
-    uint16_t imm_flag  = nthbit(11);
+    uint16_t imm_flag = nthbit(11);
     if (imm_flag) {
         reg[R_PC] += lastnbits(11);
     } else {
@@ -172,48 +172,48 @@ void jsr() {
 }
 
 void ld() {
-    uint16_t dr = (instr>>9) & REG_MASK;
+    uint16_t dr = (instr >> 9) & REG_MASK;
     reg[dr] = mem_read(reg[R_PC] + lastnbits(9));
     update_flags(dr);
 }
 
 void ldi() {
-    uint16_t dr = (instr>>9) & REG_MASK;
+    uint16_t dr = (instr >> 9) & REG_MASK;
     reg[dr] = mem_read(mem_read(reg[R_PC] + lastnbits(9)));
     update_flags(dr);
 }
 
 void ldr() {
-    uint16_t dr = (instr>>9) & REG_MASK;
+    uint16_t dr = (instr >> 9) & REG_MASK;
     reg[dr] = mem_read(reg[basereg()] + lastnbits(6));
     update_flags(dr);
 }
 
 void lea() {
-    uint16_t dr = (instr>>9) & REG_MASK;
+    uint16_t dr = (instr >> 9) & REG_MASK;
     reg[dr] = reg[R_PC] + lastnbits(9);
     update_flags(dr);
 }
 
 void not() {
-    uint16_t dr  = (instr>>9) & REG_MASK;
-    uint16_t sr = (instr>>6) & REG_MASK;
+    uint16_t dr = (instr >> 9) & REG_MASK;
+    uint16_t sr = (instr >> 6) & REG_MASK;
     reg[dr] = ~reg[sr];
     update_flags(dr);
 }
 
 void st() {
-    uint16_t sr = (instr>>9) & REG_MASK;
+    uint16_t sr = (instr >> 9) & REG_MASK;
     mem_write(reg[R_PC] + lastnbits(9), reg[sr]);
 }
 
 void sti() {
-    uint16_t sr = (instr>>9) & REG_MASK;
+    uint16_t sr = (instr >> 9) & REG_MASK;
     mem_write(mem_read(reg[R_PC] + lastnbits(9)), reg[sr]);
 }
 
 void str() {
-    uint16_t sr = (instr>>9) & REG_MASK;
+    uint16_t sr = (instr >> 9) & REG_MASK;
     mem_write(reg[basereg()] + lastnbits(6), reg[sr]);
 }
 
@@ -227,8 +227,8 @@ void trap_out() {
 }
 
 void trap_puts() {
-    for(uint16_t* p = memory + reg[R_R0]; *p; p++) {
-        putc((char) *p, stdout);
+    for (uint16_t* p = memory + reg[R_R0]; *p; p++) {
+        putc((char)*p, stdout);
     }
     fflush(stdout);
 }
@@ -239,7 +239,7 @@ void trap_in() {
 }
 
 void trap_putsp() {
-    for(uint16_t* p = memory + reg[R_R0]; *p; p++) {
+    for (uint16_t* p = memory + reg[R_R0]; *p; p++) {
         char c1 = (*p) & 0xFF;
         putc(c1, stdout);
         char c2 = (*p) >> 8;
@@ -255,23 +255,23 @@ void trap_halt() {
 void trap() {
     switch (instr & 0xFF) {
         case TRAP_GETC:
-        trap_getc();
-        break;
+            trap_getc();
+            break;
         case TRAP_OUT:
-        trap_out();
-        break;
+            trap_out();
+            break;
         case TRAP_PUTS:
-        trap_puts();
-        break;
+            trap_puts();
+            break;
         case TRAP_IN:
-        trap_in();
-        break;
+            trap_in();
+            break;
         case TRAP_PUTSP:
-        trap_putsp();
-        break;
+            trap_putsp();
+            break;
         case TRAP_HALT:
-        trap_halt();
-        break;
+            trap_halt();
+            break;
     }
 }
 
@@ -321,13 +321,12 @@ void handle_interrupt(int signal) {
 }
 
 int main(int argc, const char** argv) {
-
     if (argc < 2) {
         printf("lc3 [image-file1] ...\n");
         exit(2);
     }
-    
-    for (int j=1; j<argc; j++) {
+
+    for (int j = 1; j < argc; j++) {
         if (!read_image(argv[j])) {
             printf("Failed to load image: %s\n", argv[j]);
             exit(1);
@@ -346,52 +345,52 @@ int main(int argc, const char** argv) {
 
         switch (opcode) {
             case OP_ADD:
-            add_and(0);
-            break;
+                add_and(0);
+                break;
             case OP_AND:
-            add_and(1);
-            break;
+                add_and(1);
+                break;
             case OP_NOT:
-            not();
-            break;
+                not();
+                break;
             case OP_BR:
-            br();
-            break;
+                br();
+                break;
             case OP_JMP:
-            jmp_ret();
-            break;
+                jmp_ret();
+                break;
             case OP_JSR:
-            jsr();
-            break;
+                jsr();
+                break;
             case OP_LD:
-            ld();
-            break;
+                ld();
+                break;
             case OP_LDI:
-            ldi();
-            break;
+                ldi();
+                break;
             case OP_LDR:
-            ldr();
-            break;
+                ldr();
+                break;
             case OP_LEA:
-            lea();
-            break;
+                lea();
+                break;
             case OP_ST:
-            st();
-            break;
+                st();
+                break;
             case OP_STI:
-            sti();
-            break;
+                sti();
+                break;
             case OP_STR:
-            str();
-            break;
+                str();
+                break;
             case OP_TRAP:
-            trap();
-            break;
+                trap();
+                break;
             case OP_RES:
             case OP_RTI:
             default:
-            printf("ERROR: Unsupported opcode. Aborted.");
-            return 1;
+                printf("ERROR: Unsupported opcode. Aborted.");
+                return 1;
         }
     }
 
