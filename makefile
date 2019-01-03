@@ -6,9 +6,9 @@
 #changing platform dependant stuff, do not change this
 # Linux (default)
 LDFLAGS=
-CFLAGS=-g -Wall -std=c++11
+CFLAGS=-g -Wall
 CXXFLAGS = -w
-CC=g++
+CC=gcc
 EXEEXT=.x
 RM=rm
 
@@ -27,7 +27,7 @@ else
 endif
 
 #change the 't1' name to the name you want to call your application
-PROGRAM_NAME=emu$(EXEEXT)
+PROGRAM_NAME=lc3$(EXEEXT)
 
 #run target to compile and build, and then launch the executable
 run: $(PROGRAM_NAME)
